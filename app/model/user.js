@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema(
         default: '',
         minlength: 5,
         maxlength: 50,
-        match: regExEmailId
+        match: regExEmailId,
+        unique:true
         
     },
     password:{

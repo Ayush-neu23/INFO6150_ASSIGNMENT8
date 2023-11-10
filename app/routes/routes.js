@@ -40,12 +40,24 @@ module.exports = (app) => {
         });
     });
 
-    // route to handle creating goes here (app.post)
-    // route to handle delete goes here (app.delete)
+    // app.js (continued)
+    app.delete('/api/user/delete', async (req, res) => {
+        try {
+        const { email } = req.body;
 
-    // frontend routes =========================================================
-    // route to handle all angular requests
-    app.get('/', function (req, res) {
-        res.sendfile('./public/views/index.html'); // load our public/index.html file
-    });
+        const user = await User.findOneAndDelete({ email });
+
+        if (!user) {
+        res.status(404).json({ message: 'Email not found' });
+        } 
+        else {
+            res.send(user);
+        }
+        } catch (error) {
+        console.error(error);
+        res.send(error.message);
+        }
+        });
+
+
 }
