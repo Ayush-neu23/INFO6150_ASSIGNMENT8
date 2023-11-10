@@ -1,18 +1,14 @@
 
 const User = require("../model/user");
+const bcrypt = require('bcrypt');
+const regExPassword = /^(?=.*[@*.#])[A-Za-z0-9@*.#]*$/;
 
 module.exports = (app) => {
     
-    // server routes ===========================================================
-    // handle things like api calls
-    // authentication routes
-
-    // sample api route
     app.get('/api/user/getAll', function (req, res) {
 
         User.find(function (err, user) {
-            // if there is an error retrieving, send the error.
-            // nothing after res.send(err) will execute
+
             if (err){
                 console.log('Error: ' + err.message);
                 res.send(err.message);
@@ -24,10 +20,29 @@ module.exports = (app) => {
         });
     });
 
-    app.post('/api/user/create', function (req, res) {
-        //console.log(req.body.message);
-        var user = new User(req.body);
-        user.save(function (err, n) {
+    app.post('/api/user/create', async function (req, res) {
+
+        var {full_name, email, password} = new User(req.body);
+
+        if(!password.match(regExPassword)){
+            res.send("Password format is invalid");
+            return;
+        }
+
+        if(password.length<5 || password.length>50){
+            res.send("Password length is not valid");
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        
+        const newUser = new User({
+            full_name,
+            email,
+            password:hashedPassword,
+          });
+
+          newUser.save(function (err, n) {
             if (err){
                 console.log('User saving failed: ' + err.message);
                 res.send(err.message);
@@ -40,7 +55,6 @@ module.exports = (app) => {
         });
     });
 
-    // app.js (continued)
     app.delete('/api/user/delete', async (req, res) => {
         try {
         const { email } = req.body;
@@ -56,6 +70,32 @@ module.exports = (app) => {
         } catch (error) {
         console.error(error);
         res.send(error.message);
+        }
+        });
+
+    app.put('/api/user/edit/:email', async (req, res) => {
+        try {
+            const email = req.params.email;
+            const user = req.body;
+        
+            if(user.email != email){
+                return res.status(404).json({ message: 'Email field cannot be updated!!' });
+                
+            }
+
+            const userUpdation = await User.findOneAndUpdate(
+            { email },
+            user
+            );
+        
+            if (!userUpdation) {
+            return res.status(404).json({ message: 'No such email found' });
+            }
+        
+            return res.json(user);
+        } catch (error) {
+            console.error('Error updating User:', error.message);
+            return res.status(500).json({ message: 'User cannot be updated' });
         }
         });
 
