@@ -2,6 +2,7 @@
 const User = require("../model/user");
 const bcrypt = require('bcrypt');
 const regExPassword = /^(?=.*[@*.#])[A-Za-z0-9@*.#]*$/;
+const regExFirstName = /^[A-Za-z0-9*.#\s]*$/;
 
 module.exports = (app) => {
     
@@ -62,10 +63,10 @@ module.exports = (app) => {
         const user = await User.findOneAndDelete({ email });
 
         if (!user) {
-        res.status(404).json({ message: 'Email not found' });
+        res.status(404).json({ message: 'No such Email found' });
         } 
         else {
-            res.send(user);
+            res.send("User deleted: " + user);
         }
         } catch (error) {
         console.error(error);
@@ -75,30 +76,67 @@ module.exports = (app) => {
 
     app.put('/api/user/edit/:email', async (req, res) => {
         try {
-            const email = req.params.email;
-            const user = req.body;
+            const emailP = req.params.email;
+            const {full_name, email, password} = new User(req.body);
 
-            const check = await User.findOne({email:email});
+            if(password.length<5 || password.length>50){
+                res.send("Password length is not valid");
+                return;
+            }
+
+            if(!password.match(regExPassword)){
+                res.send("Password format is invalid");
+                return;
+            }
+    
+            if(full_name.length<5 || full_name.length>50){
+                res.send("Full name length is not valid");
+                return;
+            }
+
+            if(!full_name.match(regExFirstName)){
+                res.send("Full name format is invalid");
+                return;
+            }
+    
+
+            const check = await User.findOne({email:emailP});
 
             if(!check){
                 return res.status(404).json({ message: 'No such email found!!' });
             }
         
-            if(user.email != email){
+            if(email != emailP){
                 return res.status(404).json({ message: 'Email field cannot be updated!!' });
                 
             }
 
+            const hashedPassword = await bcrypt.hash(password, 12);
+        
+            const newUser = new User({
+                full_name: full_name,
+                email: email,
+                password: hashedPassword,
+            });
+
             const userUpdation = await User.findOneAndUpdate(
             { email },
-            user
+            {
+                full_name: full_name,
+                email: email,
+                password: hashedPassword,
+            }
             );
         
             if (!userUpdation) {
             return res.status(404).json({ message: 'No such email found' });
             }
         
-            return res.json(user);
+            return res.json({
+                full_name: full_name,
+                email: email,
+                password: hashedPassword,
+            });
         } catch (error) {
             console.error('Error updating User:', error.message);
             return res.status(500).json({ message: 'User cannot be updated' });

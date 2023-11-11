@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const regExEmailId = /\b[A-Za-z0-9._%+-]+@northeastern\.edu\b/;
-const regExFirstName = /^[A-Za-z0-9@*.#]*$/;
+const regExFirstName = /^[A-Za-z0-9*.#\s]*$/;
 
 
 const userSchema = new mongoose.Schema( 
