@@ -77,6 +77,12 @@ module.exports = (app) => {
         try {
             const email = req.params.email;
             const user = req.body;
+
+            const check = await User.findOne({email:email});
+
+            if(!check){
+                return res.status(404).json({ message: 'No such email found!!' });
+            }
         
             if(user.email != email){
                 return res.status(404).json({ message: 'Email field cannot be updated!!' });
